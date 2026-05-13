@@ -10,6 +10,11 @@ This repo now includes a basic RDM ingestion pipeline in R for:
 - continuous RDM payloads (`rdm-continuous`, including per-frame records)
 - both JSON and CSV CogFlow exports
 
+It also includes task-specific ingestion helpers for:
+
+- SART (`R/sart_ingest.R`)
+- SOC Dashboard (`R/soc_dashboard_ingest.R`)
+
 The normalizer is designed for offline analysis and can later be reused to inform
 platform-side Analysis tab logic.
 
@@ -17,6 +22,10 @@ platform-side Analysis tab logic.
 
 - `R/rdm_ingest.R`: reusable ingestion + normalization functions
 - `scripts/example_rdm_ingest.R`: minimal command-line example
+- `R/sart_ingest.R`: SART-focused extraction + summary helpers
+- `scripts/example_sart_ingest.R`: SART command-line example
+- `R/soc_dashboard_ingest.R`: SOC Dashboard-focused extraction + summary helpers
+- `scripts/example_soc_dashboard_ingest.R`: SOC Dashboard command-line example
 
 ## Requirements
 
@@ -41,6 +50,12 @@ Or pass explicit files (useful for ad hoc comparisons):
 
 ```bash
 Rscript scripts/example_rdm_ingest.R /path/a.json /path/b.csv
+
+# SART
+Rscript scripts/example_sart_ingest.R /path/to/results
+
+# SOC Dashboard
+Rscript scripts/example_soc_dashboard_ingest.R /path/to/results
 ```
 
 ## Programmatic use
