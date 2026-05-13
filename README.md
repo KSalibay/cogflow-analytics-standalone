@@ -14,6 +14,11 @@ It also includes task-specific ingestion helpers for:
 
 - SART (`R/sart_ingest.R`)
 - SOC Dashboard (`R/soc_dashboard_ingest.R`)
+- Gabor patch (`R/gabor_ingest.R`)
+
+And a combined mixed-task splitter for a single result file containing multiple task elements:
+
+- Mixed task split (`R/mixed_task_ingest.R`) into `rdm_trials`, `gabor_trials`, `drt_trials`, `mw_probe_trials`, `survey_trials`, and `other_trials`
 
 The normalizer is designed for offline analysis and can later be reused to inform
 platform-side Analysis tab logic.
@@ -26,6 +31,10 @@ platform-side Analysis tab logic.
 - `scripts/example_sart_ingest.R`: SART command-line example
 - `R/soc_dashboard_ingest.R`: SOC Dashboard-focused extraction + summary helpers
 - `scripts/example_soc_dashboard_ingest.R`: SOC Dashboard command-line example
+- `R/gabor_ingest.R`: Gabor-focused extraction + summary helpers
+- `scripts/example_gabor_ingest.R`: Gabor command-line example
+- `R/mixed_task_ingest.R`: mixed-task extraction + split helpers (RDM/DRT/MW/Survey/Other)
+- `scripts/example_mixed_task_ingest.R`: mixed-task command-line example
 
 ## Requirements
 
@@ -56,6 +65,12 @@ Rscript scripts/example_sart_ingest.R /path/to/results
 
 # SOC Dashboard
 Rscript scripts/example_soc_dashboard_ingest.R /path/to/results
+
+# Gabor patch
+Rscript scripts/example_gabor_ingest.R /path/to/results
+
+# Mixed task split (RDM + Gabor + DRT + MW probe + Survey + Other)
+Rscript scripts/example_mixed_task_ingest.R /path/to/results
 ```
 
 ## Programmatic use
