@@ -12,10 +12,23 @@ is_scalar <- function(x) {
 
 normalize_scalar <- function(x) {
   if (is.null(x)) return(NA)
+  if (length(x) == 0) return(NA)
   if (is.logical(x)) return(ifelse(is.na(x), NA, x))
   if (is.numeric(x)) return(ifelse(is.na(x), NA, x))
   if (is.character(x)) return(ifelse(length(x) == 0, NA, x))
+  if (length(x) > 1) return(paste(as.character(x), collapse = " | "))
   as.character(x)
+}
+
+normalize_cell <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA)
+
+  # Keep complex nested fields analysable without breaking row binding.
+  if (is.list(x)) {
+    return(jsonlite::toJSON(x, auto_unbox = TRUE, null = "null"))
+  }
+
+  normalize_scalar(x)
 }
 
 pluck <- function(x, path, default = NA) {
@@ -60,6 +73,11 @@ rows_to_df <- function(rows) {
     if (length(missing) > 0) {
       for (m in missing) r[[m]] <- NA
     }
+
+    for (nm in names(r)) {
+      r[[nm]] <- normalize_cell(r[[nm]])
+    }
+
     r[all_names]
   })
 
@@ -213,8 +231,11 @@ extract_all_trials <- function(trials, file_path, envelope, source_format) {
         response_angle_deg = tr$response_angle_deg %||% NA,
         response_segment_index = tr$response_segment_index %||% NA,
         accuracy = tr$accuracy %||% tr$correctness %||% NA,
-        end_reason = tr$end_reason %||% tr$ended_reason %||% NA
-      )
+        end_reason = tr$end_reason %||% tr$ended_reason %||% NA,
+        survey_responses_json = if (!is.null(tr$responses)) jsonlite::toJSON(tr$responses, auto_unbox = TRUE, null = "null") else NA
+      ),
+      # Keep plugin-specific scalar fields (e.g., drt_* metrics) for downstream analysis.
+      flatten_named(tr, "trial_")
     )
     out[[length(out) + 1]] <- row
   }
@@ -228,7 +249,7 @@ extract_rdm_trial_based <- function(trials, file_path, envelope, source_format) 
     plugin_type <- tolower(as.character(tr$plugin_type %||% ""))
     trial_type <- tolower(as.character(tr$trial_type %||% ""))
 
-    is_rdm_trial <- plugin_type == "rdm-trial" || trial_type == "rdm"
+    is_rdm_trial <- plugin_type %in% c("rdm-trial", "rdm") || trial_type == "rdm"
     if (!is_rdm_trial) next
 
     row <- list(
@@ -399,5 +420,20 @@ summarize_rdm_trial_based <- function(trial_based_df) {
     cbind(accuracy_num, responded) ~ file_path + config_id,
     data = trial_based_df,
     FUN = function(x) mean(x, na.rm = TRUE)
+  )
+}
+
+summarize_rdm_continuous_frames <- function(frame_df) {
+  if (nrow(frame_df) == 0) return(data.frame(stringsAsFactors = FALSE))
+
+  frame_df$accuracy_num <- suppressWarnings(as.numeric(frame_df$accuracy))
+  reg_col <- if ("response_response_registered" %in% names(frame_df)) frame_df$response_response_registered else rep(NA, nrow(frame_df))
+  reg_raw <- tolower(as.character(reg_col))
+  frame_df$responded <- !is.na(frame_df$response_side) | reg_raw %in% c("true", "1")
+
+  aggregate(
+    cbind(accuracy_num, responded) ~ file_path + config_id,
+    data = frame_df,
+    FUN = function(x) mean(as.numeric(x), na.rm = TRUE)
   )
 }

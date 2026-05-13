@@ -51,4 +51,11 @@ cat(sprintf("Continuous RDM frame summary rows: %d\n", nrow(rdm$continuous_frame
 if (nrow(rdm$trial_based) > 0) {
   cat("\nTrial-based summary (mean accuracy / response rate by file+config):\n")
   print(summarize_rdm_trial_based(rdm$trial_based))
+} else {
+  cat("\nTrial-based summary: no rows (likely continuous-only RDM export).\n")
+}
+
+if (nrow(rdm$continuous_frame_summary) > 0) {
+  cat("\nContinuous frame summary (mean accuracy / response rate by file+config):\n")
+  print(summarize_rdm_continuous_frames(rdm$continuous_frame_summary))
 }
