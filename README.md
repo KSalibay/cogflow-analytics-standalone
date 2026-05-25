@@ -71,7 +71,22 @@ Rscript scripts/example_gabor_ingest.R /path/to/results
 
 # Mixed task split (RDM + Gabor + DRT + MW probe + Survey + Other)
 Rscript scripts/example_mixed_task_ingest.R /path/to/results
+
+# Build task glossary CSVs (column-level)
+Rscript scripts/compile_data_dictionary.R output/data_dictionaries /path/to/results
+
+# Build from explicit file list
+Rscript scripts/compile_data_dictionary.R output/data_dictionaries /path/a.json /path/b.csv
 ```
+
+Glossary output includes one CSV per task (`rdm`, `gabor`, `sart`, `soc_dashboard`, `mixed`) with one row per column/field name (not one row per table) and:
+
+- `field_name`: column/field name
+- `detected_type`: inferred type from observed values
+- `appears_in_tables`: which normalized tables include the field
+- `non_null_rows` / `coverage_pct`: population metrics
+- `sample_values`: quick examples
+- `description`: semantic definition
 
 ## Programmatic use
 
