@@ -112,6 +112,22 @@ read_cogflow_result <- function(path) {
 }
 
 extract_trial_list_json <- function(root) {
+  # New run-export wrapper: {run:{run_session_id, ..., result_payload:{trials:[...]}}}
+  if (is.list(root) && is.list(root$run) && is.list(root$run$result_payload) && is.list(root$run$result_payload$trials)) {
+    env <- root$run$result_payload
+    env$run_session_id <- root$run$run_session_id %||% root$run_session_id %||% NA
+    env$study_slug <- root$study_slug %||% root$run$study_slug %||% NA
+    env$run_status <- root$run$status %||% root$status %||% NA
+    env$participant_key_preview <- root$run$participant_key_preview %||% root$participant_key_preview %||% NA
+    env$started_at <- root$run$started_at %||% root$started_at %||% NA
+    env$completed_at <- root$run$completed_at %||% root$completed_at %||% NA
+    return(list(
+      trials = root$run$result_payload$trials,
+      envelope = env,
+      source = "cogflow-run-json-wrapper-v2"
+    ))
+  }
+
   # Portal-export wrapper: {run_session_id, ..., result_payload:{trials:[...]}}
   if (is.list(root) && is.list(root$result_payload) && is.list(root$result_payload$trials)) {
     env <- root$result_payload
@@ -145,7 +161,7 @@ extract_trial_list_json <- function(root) {
     ))
   }
 
-  stop("Unsupported JSON structure: expected {trials:[...]} or top-level array of trial objects")
+  stop("Unsupported JSON structure: expected {run:{result_payload:{trials:[...]}}}, {result_payload:{trials:[...]}}, {trials:[...]} or top-level array of trial objects")
 }
 
 extract_trial_list_csv <- function(df) {
@@ -214,24 +230,30 @@ base_context <- function(file_path, source_format, tr, envelope) {
 extract_all_trials <- function(trials, file_path, envelope, source_format) {
   out <- list()
   for (tr in trials) {
+    drtRt <- tr$drt_rt_ms %||% NA
+    drtKey <- tr$drt_key %||% NA
+    drtResponseKey <- tr$drt_response_key %||% NA
+    drtCorrect <- tr$drt_correct %||% NA
+    drtEvent <- tr$drt_event %||% NA
+
     row <- c(
       base_context(file_path, source_format, tr, envelope),
       list(
         trial_index = tr$trial_index %||% NA,
         plugin_type = tr$plugin_type %||% NA,
         trial_type = tr$trial_type %||% NA,
-        rt_ms = tr$rt_ms %||% tr$rt %||% NA,
-        response = tr$response %||% NA,
+        rt_ms = tr$rt_ms %||% tr$rt %||% drtRt %||% NA,
+        response = tr$response %||% drtKey %||% NA,
         stimulus = tr$stimulus %||% NA,
         plugin_version = tr$plugin_version %||% NA,
         time_elapsed = tr$time_elapsed %||% NA,
         correct_side = tr$correct_side %||% NA,
         response_side = tr$response_side %||% NA,
-        response_key = tr$response_key %||% NA,
+        response_key = tr$response_key %||% drtResponseKey %||% NA,
         response_angle_deg = tr$response_angle_deg %||% NA,
         response_segment_index = tr$response_segment_index %||% NA,
-        accuracy = tr$accuracy %||% tr$correctness %||% NA,
-        end_reason = tr$end_reason %||% tr$ended_reason %||% NA,
+        accuracy = tr$accuracy %||% tr$correctness %||% drtCorrect %||% NA,
+        end_reason = tr$end_reason %||% tr$ended_reason %||% drtEvent %||% NA,
         survey_responses_json = if (!is.null(tr$responses)) jsonlite::toJSON(tr$responses, auto_unbox = TRUE, null = "null") else NA
       ),
       # Keep plugin-specific scalar fields (e.g., drt_* metrics) for downstream analysis.
